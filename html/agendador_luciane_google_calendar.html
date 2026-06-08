@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>  
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agendador da Dra. Luciane Medeiros Machado com Google Calendar</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;500&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+  <!-- Importação do Boxicons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/boxicons@2.1.4/css/boxicons.min.css">
+  <link rel="stylesheet" href="../css/style.css"/>
+</head>
+<body>
+
+<h2 class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">
+  Agendador da Dra. Luciane Medeiros Machado com Google Calendar
+</h2>
+
+<div class="app" id="app">
+
+  <!-- PATIENT VIEW -->
+  <div class="patient-view" id="patientView">
+    <div class="hero">
+      <div class="photo-ring">
+        <svg width="80" height="90" viewBox="0 0 80 90" fill="none" style="position:absolute;bottom:0;left:50%;transform:translateX(-50%)">
+          <ellipse cx="40" cy="28" rx="20" ry="22" fill="rgba(255,255,255,0.85)"/>
+          <ellipse cx="40" cy="82" rx="34" ry="28" fill="rgba(255,255,255,0.85)"/>
+        </svg>
+        <span style="position:relative;z-index:2;color:#7B9E87;font-family:'Cormorant Garamond',serif;font-size:40px;font-weight:300;line-height:1">L</span>
+      </div>
+      <p class="doctor-name"><em>Dra.</em> Luciane Medeiros Machado</p>
+      <p class="doctor-creds">Psicóloga · CRP 06/000000</p>
+      <div class="hero-divider"></div>
+      <p class="hero-bio">Atendo adultos e adolescentes com foco em ansiedade, autoconhecimento e saúde emocional. Abordagem cognitivo-comportamental e humanista para promover bem-estar e qualidade de vida.</p>
+      <div class="specialties">
+        <span class="tag">Ansiedade</span><span class="tag">Depressão</span><span class="tag">Autoestima</span><span class="tag">Relacionamentos</span><span class="tag">Terapia Online</span><span class="tag">Presencial</span>
+      </div>
+    </div>
+    
+    <div class="cta-section">
+      <button class="btn-agendar" onclick="openModal()">
+        <i class="bx bx-calendar-plus" aria-hidden="true"></i> &nbsp;Agendar Consulta
+      </button>
+      <p class="cta-note">Primeira sessão com 20 min de escuta gratuita</p>
+    </div>
+    
+    <div style="background:#fff;margin:0 2rem 1rem;border-radius:16px;border:1px solid var(--border);padding:1.25rem;">
+      <p style="font-size:12px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:1rem;">Como funciona</p>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <div style="width:28px;height:28px;border-radius:50%;background:var(--sage-light);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <i class="bx bx-edit" style="font-size:14px;color:var(--sage-dark)" aria-hidden="true"></i>
+          </div>
+          <div>
+            <p style="font-size:13px;font-weight:500;">Escolha data e horário</p>
+            <p style="font-size:12px;color:var(--muted);">Veja horários disponíveis em tempo real</p>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <div style="width:28px;height:28px;border-radius:50%;background:var(--blush-light);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <i class="bx bx-calendar-check" style="font-size:14px;color:#7A5040" aria-hidden="true"></i>
+          </div>
+          <div>
+            <p style="font-size:13px;font-weight:500;">Confirmação automática</p>
+            <p style="font-size:12px;color:var(--muted);">O evento é criado direto na agenda</p>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <div style="width:28px;height:28px;border-radius:50%;background:var(--sage-light);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <i class="bx bx-heart" style="font-size:14px;color:var(--sage-dark)" aria-hidden="true"></i>
+          </div>
+          <div>
+            <p style="font-size:13px;font-weight:500;">Cuide-se com apoio</p>
+            <p style="font-size:12px;color:var(--muted);">Um espaço seguro de escuta e acolhimento</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="admin-toggle" onclick="showAdmin()">Acesso da psicóloga</p>
+  </div>
+
+  <!-- MODAL AGENDAMENTO -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <div id="formContent">
+        <p class="modal-title">Agendar consulta</p>
+        <p class="modal-sub">Preencha seus dados e escolha um horário disponível.</p>
+        <div class="field"><label for="f_nome">Nome completo</label><input type="text" id="f_nome" placeholder="Seu nome completo" /></div>
+        <div class="field"><label for="f_email">E-mail</label><input type="email" id="f_email" placeholder="seu@email.com" /></div>
+        <div class="field"><label for="f_tel">Telefone / WhatsApp</label><input type="tel" id="f_tel" placeholder="(00) 00000-0000" /></div>
+        <div class="field"><label for="f_modal">Modalidade</label>
+          <select id="f_modal">
+            <option value="">Selecione...</option>
+            <option>Presencial</option>
+            <option>Online (videochamada)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Data desejada</label>
+          <div class="date-nav">
+            <button onclick="changeDay(-1)" aria-label="Dia anterior">‹</button>
+            <span id="dateLabel">—</span>
+            <button onclick="changeDay(1)" aria-label="Próximo dia">›</button>
+          </div>
+          <div id="slotsArea"><p class="slots-loading">Selecione uma data para ver horários.</p></div>
+        </div>
+        <div class="field"><label for="f_msg">Mensagem (opcional)</label><textarea id="f_msg" placeholder="Conte um pouco sobre o que te trouxe aqui..."></textarea></div>
+        <div class="modal-actions">
+          <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+          <button class="btn-confirm" id="btnConfirm" onclick="submitForm()" disabled>
+            <i class="bx bx-calendar" aria-hidden="true"></i> Confirmar agendamento
+          </button>
+        </div>
+      </div>
+      <div class="success-msg" id="successMsg">
+        <div class="success-icon"><i class="bx bx-check-circle" aria-hidden="true"></i></div>
+        <h3>Consulta agendada!</h3>
+        <p id="successDetail">O evento foi criado na agenda da Dra. Luciane.</p>
+        <button class="btn-confirm" style="margin-top:1.5rem;width:100%" onclick="closeModal()">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN VIEW -->
+  <div class="admin-view" id="adminView">
+    <div class="admin-header">
+      <div>
+        <p class="admin-brand">Painel · <span>Dra. Luciane</span></p>
+        <p style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:2px;">Agenda integrada ao Google Calendar</p>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button id="btn-gcal-auth" onclick="handleAuthClick()" class="gcal-badge" style="cursor:pointer; border:none;">
+          <i class="bx bx-lock-open-alt" style="font-size:12px" aria-hidden="true"></i> Conectar Google Calendar
+        </button>
+        <button onclick="showPatient()" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;border-radius:8px;padding:7px 14px;font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer;"><i class="bx bx-left-arrow-alt" aria-hidden="true"></i> Sair</button>
+      </div>
+    </div>
+    <div class="admin-body">
+      <div class="cal-banner"><i class="bx bx-info-circle" style="font-size:16px" aria-hidden="true"></i> Ao marcar como <strong>Agendado</strong>, o evento é criado automaticamente no Google Calendar da psicóloga.</div>
+      <div class="stats-row" id="statsRow"></div>
+      <p class="section-title">Solicitações de agendamento</p>
+      <div class="filter-bar">
+        <button class="filter-btn active" onclick="filterList('todos',this)">Todos</button>
+        <button class="filter-btn" onclick="filterList('pendente',this)">Pendentes</button>
+        <button class="filter-btn" onclick="filterList('agendado',this)">Agendados</button>
+        <button class="filter-btn" onclick="filterList('cancelado',this)">Cancelados</button>
+      </div>
+      <div class="patients-list" id="patientsList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN LOGIN -->
+<div class="modal-overlay" id="confirmAdmin" style="z-index:200">
+  <div class="modal" style="max-width:320px;text-align:center;padding:2rem 1.5rem">
+    <p class="modal-title" style="margin-bottom:8px">Acesso restrito</p>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:1.5rem">Digite a senha para acessar o painel da Dra. Luciane.</p>
+    <div class="field" style="margin-bottom:1rem"><label for="adminPass" class="sr-only">Senha</label><input type="password" id="adminPass" placeholder="Senha" /></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="document.getElementById('confirmAdmin').classList.remove('open')">Cancelar</button>
+      <button class="btn-confirm" onclick="checkPass()">Entrar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+
+
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://apis.google.com/js/api.js" async defer></script>
+
+<script src="../js/script.js"></script>
+</body>
+</html>

@@ -1,0 +1,168 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --sage: #7B9E87; --sage-light: #EAF0EC; --sage-dark: #4A6B55;
+    --blush: #D9B8A8; --blush-light: #F5EDE8; --cream: #FAF7F4;
+    --charcoal: #2C2C2A; --muted: #7A7A78; --border: rgba(123,158,135,0.2);
+  }
+
+  body { 
+      font-family: 'DM Sans', sans-serif; 
+      background: var(--cream); 
+      color: var(--charcoal);
+    }
+
+  .app { 
+      min-height: 100vh; 
+  }
+
+  .patient-view { 
+      display: flex;  
+      flex-direction: column;
+   }
+
+  .hero {
+      background: linear-gradient(160deg, #f0ece5 0%, #e8ded5 100%);
+      padding: 3rem 2rem 2rem; 
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+  }
+
+  .hero::before { 
+      content:'';
+      position:absolute; top:-60px;
+      right:-60px; 
+      width:220px; 
+      height:220px;
+      border-radius:50%; 
+      background:rgba(123,158,135,0.12); 
+    }
+
+  .hero::after { 
+      content:'';
+      position:absolute; 
+      bottom:-40px; 
+      left:-40px;
+      width:160px; 
+      height:160px;
+      border-radius:50%; 
+      background:rgba(217,184,168,0.2);
+ }
+
+  .photo-ring {
+    width:130px; height:130px; 
+    border-radius:50%; margin:0 auto 1.25rem;
+    background:var(--sage); 
+    border:4px solid #fff;
+    box-shadow:0 4px 24px rgba(123,158,135,0.25);
+    display:flex; 
+    align-items:center; 
+    justify-content:center;
+    position:relative; 
+    z-index:1; 
+    overflow:hidden;
+  }
+  .doctor-name { 
+    font-family:'Cormorant Garamond',
+    serif; font-size:28px; font-weight:400;
+     color:var(--charcoal); position:relative;
+      z-index:1; line-height:1.2; 
+    }
+  .doctor-name em { font-style:italic; color:var(--sage-dark); }
+  .doctor-creds { font-size:12px; font-weight:500; color:var(--sage-dark); letter-spacing:0.08em; text-transform:uppercase; margin-top:4px; position:relative; z-index:1; }
+  .hero-divider { width:48px; height:1.5px; background:var(--blush); margin:1rem auto; position:relative; z-index:1; }
+  .hero-bio { max-width:480px; margin:0 auto; font-size:14px; line-height:1.75; color:var(--muted); position:relative; z-index:1; }
+  .specialties { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-top:1.25rem; position:relative; z-index:1; }
+  .tag { background:#fff; border:1px solid var(--border); color:var(--sage-dark); font-size:11px; font-weight:500; padding:4px 12px; border-radius:20px; letter-spacing:0.04em; }
+  .cta-section { padding:2rem; text-align:center; background:var(--cream); }
+  .btn-agendar { background:var(--sage); color:#fff; border:none; padding:15px 48px; border-radius:50px; font-family:'DM Sans',sans-serif; font-size:15px; font-weight:500; cursor:pointer; letter-spacing:0.04em; transition:all 0.25s; box-shadow:0 4px 20px rgba(123,158,135,0.35); }
+  .btn-agendar:hover { background:var(--sage-dark); transform:translateY(-2px); }
+  .btn-agendar:active { transform:translateY(0); }
+  .cta-note { font-size:12px; color:var(--muted); margin-top:10px; }
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(44,44,42,0.55); z-index:100; align-items:center; justify-content:center; padding:1rem; }
+  .modal-overlay.open { display:flex; }
+  .modal { background:var(--cream); border-radius:20px; padding:2rem; width:100%; max-width:440px; max-height:90vh; overflow-y:auto; animation:fadeUp 0.3s ease; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+  .modal-title { font-family:'Cormorant Garamond',serif; font-size:22px; font-weight:400; margin-bottom:4px; }
+  .modal-sub { font-size:13px; color:var(--muted); margin-bottom:1.5rem; }
+  .field { margin-bottom:1rem; }
+  .field label { font-size:12px; font-weight:500; color:var(--muted); letter-spacing:0.05em; text-transform:uppercase; display:block; margin-bottom:6px; }
+  .field input, .field select, .field textarea { width:100%; background:#fff; border:1px solid var(--border); border-radius:10px; padding:10px 14px; font-family:'DM Sans',sans-serif; font-size:14px; color:var(--charcoal); outline:none; transition:border 0.2s; }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color:var(--sage); }
+  .field textarea { resize:none; height:70px; }
+  .modal-actions { display:flex; gap:10px; margin-top:1.5rem; }
+  .btn-cancel { flex:1; background:transparent; border:1px solid var(--border); border-radius:50px; padding:11px; font-family:'DM Sans',sans-serif; font-size:14px; cursor:pointer; color:var(--muted); transition:all 0.2s; }
+  .btn-cancel:hover { background:var(--sage-light); }
+  .btn-confirm { flex:2; background:var(--sage); border:none; border-radius:50px; padding:11px; font-family:'DM Sans',sans-serif; font-size:14px; font-weight:500; color:#fff; cursor:pointer; transition:all 0.2s; }
+  .btn-confirm:hover { background:var(--sage-dark); }
+  .btn-confirm:disabled { background:#ccc; cursor:not-allowed; }
+  .success-msg { display:none; text-align:center; padding:2rem 1rem; }
+  .success-icon { font-size:52px; margin-bottom:1rem; color:var(--sage); }
+  .success-msg h3 { font-family:'Cormorant Garamond',serif; font-size:22px; margin-bottom:8px; }
+  .success-msg p { font-size:13px; color:var(--muted); line-height:1.6; }
+  .admin-view { display:none; min-height:100vh; background:var(--cream); }
+  .admin-header { background:var(--charcoal); color:#fff; padding:1.25rem 2rem; display:flex; align-items:center; justify-content:space-between; }
+  .admin-brand { font-family:'Cormorant Garamond',serif; font-size:20px; font-weight:300; }
+  .admin-brand span { color:var(--blush); font-style:italic; }
+  .admin-body { padding:1.5rem 2rem; max-width:900px; margin:0 auto; }
+  .stats-row { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:2rem; }
+  .stat-card { background:#fff; border-radius:12px; border:1px solid var(--border); padding:1rem 1.25rem; }
+  .stat-label { font-size:11px; font-weight:500; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); margin-bottom:4px; }
+  .stat-value { font-family:'Cormorant Garamond',serif; font-size:32px; font-weight:400; }
+  .stat-value.s-pending { color:#B47900; }
+  .stat-value.s-agendado { color:var(--sage-dark); }
+  .stat-value.s-cancelado { color:#A32D2D; }
+  .section-title { font-family:'Cormorant Garamond',serif; font-size:20px; font-weight:400; margin-bottom:1rem; }
+  .patients-list { display:flex; flex-direction:column; gap:10px; }
+  .patient-card { background:#fff; border-radius:12px; border:1px solid var(--border); padding:1rem 1.25rem; display:flex; align-items:flex-start; gap:1rem; }
+  .patient-avatar { width:42px; height:42px; border-radius:50%; background:var(--sage-light); border:1.5px solid var(--border); display:flex; align-items:center; justify-content:center; font-family:'Cormorant Garamond',serif; font-size:16px; color:var(--sage-dark); flex-shrink:0; }
+  .patient-info { flex:1; min-width:0; }
+  .patient-name { font-weight:500; font-size:14px; }
+  .patient-meta { font-size:12px; color:var(--muted); margin-top:2px; }
+  .patient-date { font-size:12px; color:var(--muted); }
+  .patient-actions { display:flex; flex-direction:column; gap:6px; align-items:flex-end; flex-shrink:0; }
+  .status-select { font-size:12px; border-radius:20px; border:1px solid var(--border); padding:4px 8px; background:#fff; color:var(--charcoal); cursor:pointer; outline:none; font-family:'DM Sans',sans-serif; }
+  .btn-cal { font-size:11px; background:var(--sage-light); border:1px solid var(--border); border-radius:20px; padding:4px 10px; cursor:pointer; color:var(--sage-dark); font-weight:500; font-family:'DM Sans',sans-serif; white-space:nowrap; transition:all 0.2s; }
+  .btn-cal:hover { background:var(--sage); color:#fff; }
+  .btn-cal:disabled { opacity:0.5; cursor:not-allowed; }
+  .filter-bar { display:flex; gap:8px; margin-bottom:1rem; flex-wrap:wrap; }
+  .filter-btn { background:#fff; border:1px solid var(--border); border-radius:20px; padding:6px 16px; font-family:'DM Sans',sans-serif; font-size:12px; font-weight:500; cursor:pointer; transition:all 0.2s; color:var(--muted); }
+  .filter-btn.active { background:var(--sage); border-color:var(--sage); color:#fff; }
+  .empty-state { text-align:center; padding:3rem; color:var(--muted); font-size:14px; }
+  .admin-toggle { font-size:11px; color:var(--muted); text-align:center; padding:1rem; cursor:pointer; text-decoration:underline; }
+  .cal-banner { background:var(--sage-light); border:1px solid var(--border); border-radius:10px; padding:10px 14px; margin-bottom:1.5rem; font-size:12px; color:var(--sage-dark); display:flex; align-items:center; gap:8px; }
+  .gcal-badge { display:inline-flex; align-items:center; gap:4px; background:#fff; border:1px solid var(--border); border-radius:20px; padding:3px 10px; font-size:11px; font-weight:500; color:var(--sage-dark); }
+  .spinning { display:inline-block; animation:spin 1s linear infinite; }
+  @keyframes spin { to{transform:rotate(360deg)} }
+  .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:var(--charcoal); color:#fff; padding:10px 20px; border-radius:30px; font-size:13px; z-index:9999; opacity:0; transition:opacity 0.3s; pointer-events:none; white-space:nowrap; }
+  .toast.show { opacity:1; }
+  .slot-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:6px; }
+  .slot-btn { background:#fff; border:1px solid var(--border); border-radius:8px; padding:8px 4px; font-size:13px; cursor:pointer; font-family:'DM Sans',sans-serif; transition:all 0.2s; text-align:center; }
+  .slot-btn:hover { border-color:var(--sage); background:var(--sage-light); }
+  .slot-btn.selected { background:var(--sage); color:#fff; border-color:var(--sage); }
+  .slots-loading { font-size:13px; color:var(--muted); padding:12px 0; text-align:center; }
+  .date-nav { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+
+  .date-nav button { 
+      background:none; 
+      border:1px solid var(--border); 
+      border-radius:8px; width:30px; 
+      height:30px;
+      cursor:pointer; font-size:16px; 
+      display:flex; 
+      align-items:center; 
+      justify-content:center;
+      transition:all 0.2s; 
+    }
+
+  .date-nav button:hover {
+     background:var(--sage-light); 
+    }
+
+  .date-nav span { 
+    font-size:13px;
+     font-weight:500; 
+     flex:1;
+    text-align:center; 
+  }
