@@ -3,7 +3,7 @@
 <head>  
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Agendador da Dra. Luciane Medeiros Machado com Google Calendar</title>
+  <title>Agendador da Mr. Luciane Medeiros Machado com Google Calendar</title>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;500&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
   <!-- Importação do Boxicons -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/boxicons@2.1.4/css/boxicons.min.css">
@@ -12,7 +12,7 @@
 <body>
 
 <h2 class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">
-  Agendador da Dra. Luciane Medeiros Machado com Google Calendar
+  Agendador da Mr. Luciane Medeiros Machado com Google Calendar
 </h2>
 
 <div class="app" id="app">
@@ -21,13 +21,9 @@
   <div class="patient-view" id="patientView">
     <div class="hero">
       <div class="photo-ring">
-        <svg width="80" height="90" viewBox="0 0 80 90" fill="none" style="position:absolute;bottom:0;left:50%;transform:translateX(-50%)">
-          <ellipse cx="40" cy="28" rx="20" ry="22" fill="rgba(255,255,255,0.85)"/>
-          <ellipse cx="40" cy="82" rx="34" ry="28" fill="rgba(255,255,255,0.85)"/>
-        </svg>
-        <span style="position:relative;z-index:2;color:#7B9E87;font-family:'Cormorant Garamond',serif;font-size:40px;font-weight:300;line-height:1">L</span>
+        <img src="/assets/psicologa-luciane.jpg" alt="Foto da Mr. Luciane Medeiros Machado" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
       </div>
-      <p class="doctor-name"><em>Dra.</em> Luciane Medeiros Machado</p>
+      <p class="doctor-name"><em>Mr.</em> Luciane Medeiros Machado</p>
       <p class="doctor-creds">Psicóloga · CRP 06/000000</p>
       <div class="hero-divider"></div>
       <p class="hero-bio">Atendo adultos e adolescentes com foco em ansiedade, autoconhecimento e saúde emocional. Abordagem cognitivo-comportamental e humanista para promover bem-estar e qualidade de vida.</p>
@@ -114,7 +110,7 @@
       <div class="success-msg" id="successMsg">
         <div class="success-icon"><i class="bx bx-check-circle" aria-hidden="true"></i></div>
         <h3>Consulta agendada!</h3>
-        <p id="successDetail">O evento foi criado na agenda da Dra. Luciane.</p>
+        <p id="successDetail">O evento foi solicitado na agenda da Mr. Luciane. Está pendente de confirmação.</p>
         <button class="btn-confirm" style="margin-top:1.5rem;width:100%" onclick="closeModal()">Fechar</button>
       </div>
     </div>
@@ -124,7 +120,7 @@
   <div class="admin-view" id="adminView">
     <div class="admin-header">
       <div>
-        <p class="admin-brand">Painel · <span>Dra. Luciane</span></p>
+        <p class="admin-brand">Painel · <span>Mr. Luciane</span></p>
         <p style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:2px;">Agenda integrada ao Google Calendar</p>
       </div>
       <div style="display:flex;gap:8px;align-items:center;">
@@ -153,7 +149,7 @@
 <div class="modal-overlay" id="confirmAdmin" style="z-index:200">
   <div class="modal" style="max-width:320px;text-align:center;padding:2rem 1.5rem">
     <p class="modal-title" style="margin-bottom:8px">Acesso restrito</p>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:1.5rem">Digite a senha para acessar o painel da Dra. Luciane.</p>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:1.5rem">Digite a senha para acessar o painel da Mr. Luciane.</p>
     <div class="field" style="margin-bottom:1rem"><label for="adminPass" class="sr-only">Senha</label><input type="password" id="adminPass" placeholder="Senha" /></div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="document.getElementById('confirmAdmin').classList.remove('open')">Cancelar</button>

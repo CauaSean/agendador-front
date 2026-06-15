@@ -1,13 +1,7 @@
-const ADMIN_PASS = 'luciane123';
 const GCAL_URL = '';
 
-let patients = [
-  { id:1, nome:'Ana Carolina Silva', email:'ana.carol@email.com', tel:'(34) 99812-3456', modal:'Presencial', status:'agendado', data:'02/06/2026', hora:'09:00', msg:'Ansiedade no trabalho.', calId:null },
-  { id:2, nome:'Marcos Pereira Lima', email:'marcos.lima@gmail.com', tel:'(34) 98741-2200', modal:'Online (videochamada)', status:'pendente', data:'10/06/2026', hora:'14:00', msg:'', calId:null },
-  { id:3, nome:'Renata Souza', email:'renata.s@hotmail.com', tel:'(34) 99654-0011', modal:'Presencial', status:'pendente', data:'11/06/2026', hora:'10:00', msg:'Autoestima.', calId:null },
-  { id:4, nome:'Felipe Andrade', email:'fandrade@empresa.com.br', tel:'(34) 98200-5533', modal:'Online (videochamada)', status:'cancelado', data:'01/06/2026', hora:'19:00', msg:'', calId:null },
-];
-let nextId = 5;
+let patients = [];
+let nextId = 1;
 let activeFilter = 'todos';
 
 // Date picker state
@@ -27,12 +21,27 @@ function fmtISO(d) {
 }
 function pad(n){ return String(n).padStart(2,'0'); }
 
-function changeDay(delta) {
+function toLocalISOString(d) {
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
+async function loadPatients() {
+  try {
+    const res = await fetch('/api/patients');
+    patients = await res.json();
+  } catch(e) {
+    console.error('Erro ao carregar pacientes', e);
+    patients = [];
+  }
+}
+
+async function changeDay(delta) {
   pickedDate.setDate(pickedDate.getDate() + delta);
   const today = new Date(); today.setHours(0,0,0,0);
   if(pickedDate < today) { pickedDate = new Date(today); pickedDate.setDate(today.getDate()+1); }
   pickedSlot = null;
   document.getElementById('btnConfirm').disabled = true;
+  await loadPatients();
   renderDatePicker();
 }
 
@@ -60,13 +69,14 @@ function selectSlot(s) {
   renderDatePicker();
 }
 
-function openModal() {
+async function openModal() {
   document.getElementById('modalOverlay').classList.add('open');
   document.getElementById('formContent').style.display = 'block';
   document.getElementById('successMsg').style.display = 'none';
   pickedDate = new Date(); pickedDate.setDate(pickedDate.getDate()+1);
   pickedSlot = null;
   document.getElementById('btnConfirm').disabled = true;
+  await loadPatients();
   renderDatePicker();
 }
 function closeModal() {
@@ -97,14 +107,28 @@ async function submitForm() {
     const res = await callCalendarAPI('create_event', {
       summary: `Consulta – ${nome} (${modal})`,
       description: `Paciente: ${nome}\nE-mail: ${email}\nTelefone: ${tel}\nModalidade: ${modal}`,
-      start: { dateTime: startDT.toISOString(), timeZone: 'America/Sao_Paulo' },
-      end:   { dateTime: endDT.toISOString(),   timeZone: 'America/Sao_Paulo' },
+      start: { dateTime: toLocalISOString(startDT), timeZone: 'America/Sao_Paulo' },
+      end:   { dateTime: toLocalISOString(endDT),   timeZone: 'America/Sao_Paulo' },
     });
     calId = res?.id || 'criado';
   } catch(e) { /* continua mesmo sem calendar */ }
 
-  patients.unshift({ id:nextId++, nome, email, tel, modal, status:'agendado', data:dateStr, hora:pickedSlot, msg:document.getElementById('f_msg').value.trim(), calId });
-  renderAdmin();
+  try {
+    await fetch('/api/patients', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nome, email, tel, modal,
+        status: 'pendente',
+        data: dateStr,
+        hora: pickedSlot,
+        msg: document.getElementById('f_msg').value.trim(),
+        calId
+      })
+    });
+  } catch(e) {
+    console.error('Erro ao salvar paciente', e);
+  }
 
   document.getElementById('formContent').style.display='none';
   document.getElementById('successMsg').style.display='block';
@@ -215,8 +239,8 @@ async function createCalendarEvent(p) {
   return callCalendarAPI('create_event', {
     summary: `Consulta – ${p.nome} (${p.modal})`,
     description: `Paciente: ${p.nome}\nE-mail: ${p.email}\nTelefone: ${p.tel}\nModalidade: ${p.modal}\nNotas: ${p.msg || 'Sem observações'}`,
-    start: { dateTime: startDT.toISOString(), timeZone: 'America/Sao_Paulo' },
-    end: { dateTime: endDT.toISOString(), timeZone: 'America/Sao_Paulo' }
+    start: { dateTime: toLocalISOString(startDT), timeZone: 'America/Sao_Paulo' },
+    end: { dateTime: toLocalISOString(endDT), timeZone: 'America/Sao_Paulo' }
   });
 }
 
@@ -249,6 +273,16 @@ async function changeStatus(id, newStatus, btn) {
       showToast('🗑️ Evento removido do Google Calendar.');
     } catch(e) {}
   }
+
+  try {
+    await fetch(`/api/patients/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: p.status, calId: p.calId })
+    });
+  } catch(e) {
+    console.error('Erro ao atualizar paciente', e);
+  }
   renderAdmin();
 }
 
@@ -257,13 +291,29 @@ function showAdmin() {
   document.getElementById('adminPass').value='';
   setTimeout(()=>document.getElementById('adminPass').focus(),100);
 }
-function checkPass() {
-  if(document.getElementById('adminPass').value===ADMIN_PASS){
-    document.getElementById('confirmAdmin').classList.remove('open');
-    document.getElementById('patientView').style.display='none';
-    document.getElementById('adminView').style.display='block';
-    renderAdmin();
-  } else { alert('Senha incorreta.'); }
+async function checkPass() {
+  const senha = document.getElementById('adminPass').value;
+
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: senha })
+    });
+    const data = await res.json();
+
+    if (data.ok) {
+      document.getElementById('confirmAdmin').classList.remove('open');
+      document.getElementById('patientView').style.display = 'none';
+      document.getElementById('adminView').style.display = 'block';
+      await loadPatients();
+      renderAdmin();
+    } else {
+      alert('Senha incorreta.');
+    }
+  } catch (e) {
+    alert('Erro ao verificar senha.');
+  }
 }
 function showPatient() {
   document.getElementById('adminView').style.display='none';
