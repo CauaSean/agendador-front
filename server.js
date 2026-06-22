@@ -15,6 +15,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.post('/api/login', (req, res) => {
   const { password } = req.body;
 
+  console.log("Senha que veio do site:", password);
+  console.log("Senha que está no .env:", process.env.ADMIN_PASS);
+  
   if (!password) {
     return res.status(400).json({ ok: false, error: 'Senha não informada.' });
   }

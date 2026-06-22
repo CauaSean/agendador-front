@@ -28,17 +28,26 @@ function toLocalISOString(d) {
 async function loadPatients() {
   try {
     const res = await fetch('/api/patients');
+    if (!res.ok) throw new Error('Erro na resposta do servidor');
     patients = await res.json();
+    
+    // Atualiza o sequencial do nextId com base no maior ID existente vindo do banco
+    if (patients.length > 0) {
+      const maxId = Math.max(...patients.map(p => Number(p.id) || 0));
+      if (maxId >= nextId) nextId = maxId + 1;
+    }
   } catch(e) {
-    console.error('Erro ao carregar pacientes', e);
-    patients = [];
+    console.error('Erro ao carregar pacientes da API. Mantendo cache local.', e);
   }
 }
 
 async function changeDay(delta) {
   pickedDate.setDate(pickedDate.getDate() + delta);
   const today = new Date(); today.setHours(0,0,0,0);
-  if(pickedDate < today) { pickedDate = new Date(today); pickedDate.setDate(today.getDate()+1); }
+  if(pickedDate < today) { 
+    pickedDate = new Date(today); 
+    pickedDate.setDate(today.getDate()+1); 
+  }
   pickedSlot = null;
   document.getElementById('btnConfirm').disabled = true;
   await loadPatients();
@@ -47,14 +56,18 @@ async function changeDay(delta) {
 
 function renderDatePicker() {
   document.getElementById('dateLabel').textContent = fmtDate(pickedDate);
-  // figure out which slots are already taken by patients on this day
   const dateStr = `${pad(pickedDate.getDate())}/${pad(pickedDate.getMonth()+1)}/${pickedDate.getFullYear()}`;
-  const taken = patients.filter(p => p.data === dateStr && p.status !== 'cancelado').map(p => p.hora);
+  
+  const taken = patients
+    .filter(p => p && p.data === dateStr && p.status !== 'cancelado')
+    .map(p => p.hora);
+    
   const isWeekend = pickedDate.getDay() === 0 || pickedDate.getDay() === 6;
   if(isWeekend) {
     document.getElementById('slotsArea').innerHTML = '<p class="slots-loading">Sem atendimento aos finais de semana.</p>';
     return;
   }
+  
   const grid = SLOTS.map(s => {
     const isTaken = taken.includes(s);
     const isSel = s === pickedSlot;
@@ -79,11 +92,16 @@ async function openModal() {
   await loadPatients();
   renderDatePicker();
 }
+
 function closeModal() {
   document.getElementById('modalOverlay').classList.remove('open');
-  ['f_nome','f_email','f_tel','f_msg'].forEach(id => document.getElementById(id).value='');
-  document.getElementById('f_modal').selectedIndex=0;
-  pickedSlot=null;
+  ['f_nome','f_email','f_tel','f_msg'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.value = '';
+  });
+  const modalSelect = document.getElementById('f_modal');
+  if(modalSelect) modalSelect.selectedIndex = 0;
+  pickedSlot = null;
 }
 
 async function submitForm() {
@@ -113,86 +131,135 @@ async function submitForm() {
     calId = res?.id || 'criado';
   } catch(e) { /* continua mesmo sem calendar */ }
 
+  const novoPaciente = {
+    id: nextId++,
+    nome,
+    email,
+    tel,
+    modal,
+    status: 'pendente',
+    data: dateStr,
+    hora: pickedSlot,
+    msg: document.getElementById('f_msg').value.trim(),
+    calId
+  };
+
+  // Envia ao servidor de forma assíncrona
   try {
     await fetch('/api/patients', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        nome, email, tel, modal,
-        status: 'pendente',
-        data: dateStr,
-        hora: pickedSlot,
-        msg: document.getElementById('f_msg').value.trim(),
-        calId
-      })
+      body: JSON.stringify(novoPaciente)
     });
   } catch(e) {
-    console.error('Erro ao salvar paciente', e);
+    console.error('Erro ao registrar no banco, mantendo cópia em memória local.', e);
   }
+
+  // Alimenta a lista local imediatamente para o painel refletir a mudança
+  patients.push(novoPaciente);
+  renderAdmin();
 
   document.getElementById('formContent').style.display='none';
   document.getElementById('successMsg').style.display='block';
   document.getElementById('successDetail').textContent = `Consulta marcada para ${dateStr} às ${pickedSlot}. Evento adicionado ao Google Calendar da Dra. Luciane.`;
 }
 
-
+//CONFIGURAÇÕES GOOGLE OAUTH2 & GIS
 const CLIENT_ID = '289288652429-3vplpt2mduqmmgnb3291b3468d5lo4oh.apps.googleusercontent.com';
 const SCOPES = 'https://www.googleapis.com/auth/calendar.events'; 
 
-let tokenClient;
+let tokenClient = null;
 let gapiInited = false;
 let gisiInited = false;
-let accessToken = null; // Guardará a permissão temporária da Dra. Luciane
+let accessToken = null;
 
-// Inicializa as ferramentas do Google assim que a página carrega
-window.onload = function() {
-  gapi.load('client', intializeGapiClient);
-  initializeGisClient();
-};
+// Garante o carregamento mesmo se os scripts externos demorarem
+function initApp() {
+  const gapiDisponivel = typeof gapi !== 'undefined' && gapi.load;
+  const gisDisponivel = typeof google !== 'undefined' && google.accounts && google.accounts.oauth2;
 
-async function intializeGapiClient() {
-  await gapi.client.init({});
-  gapiInited = true;
-}
+  if (gapiDisponivel && !gapiInited) {
+    gapi.load('client', intializeGapiClient);
+  }
 
-function initializeGisClient() {
-  tokenClient = google.accounts.oauth2.initTokenClient({
-    client_id: CLIENT_ID,
-    scope: SCOPES,
-    callback: (tokenResponse) => {
-      if (tokenResponse.error !== undefined) {
-        throw (tokenResponse);
-      }
-      accessToken = tokenResponse.access_token;
-      
-      // Atualiza o visual do botão no painel de controle
-      const btn = document.getElementById('btn-gcal-auth');
-      if(btn) {
-        btn.innerHTML = '<i class="bx bx-check-circle"></i> Agenda Conectada';
-        btn.style.background = '#7B9E87';
-        btn.style.color = '#fff';
-      }
-      showToast('✅ Google Calendar conectado com sucesso!');
-    },
-  });
-  gisiInited = true;
-}
+  if (gisDisponivel && !gisiInited) {
+    initializeGisClient();
+  }
 
-// Função chamada quando a Dra. clica para conectar a agenda
-function handleAuthClick() {
-  if (!tokenClient) return;
-  
-  // Se já tiver token, solicita uma renovação silenciosa ou abre a janela se exppirado
-  if (accessToken === null) {
-    tokenClient.requestAccessToken({prompt: 'consent'});
-  } else {
-    tokenClient.requestAccessToken({prompt: ''});
+  // Se algum ainda não estiver pronto, tenta novamente em breve
+  if (!gapiInited || !gisiInited) {
+    setTimeout(initApp, 200);
   }
 }
 
-// ── Nova Função de Integração Direta com a Google Calendar API ──
+// Dispara a inicialização assim que o DOM estiver pronto
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initApp);
+} else {
+  initApp();
+}
+
+async function intializeGapiClient() {
+  try {
+    await gapi.client.init({});
+    gapiInited = true;
+  } catch (e) {
+    console.error('Erro ao inicializar GAPI client:', e);
+  }
+}
+
+function initializeGisClient() {
+  try {
+    tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: CLIENT_ID,
+      scope: SCOPES,
+      callback: (tokenResponse) => {
+        if (tokenResponse.error !== undefined) {
+          throw (tokenResponse);
+        }
+        accessToken = tokenResponse.access_token;
+        
+        // Atualiza visual do botão
+        const btn = document.getElementById('btn-gcal-auth');
+        if(btn) {
+          btn.innerHTML = '<i class="bx bx-check-circle"></i> Agenda Conectada';
+          btn.style.background = '#7B9E87';
+          btn.style.color = '#fff';
+        }
+        showToast('✅ Google Calendar conectado com sucesso!');
+      },
+    });
+    gisiInited = true;
+  } catch (e) {
+    console.error('Erro ao inicializar GIS client:', e);
+  }
+}
+
+
+function handleAuthClick() {
+  if (!tokenClient) {
+    const gisDisponivel = typeof google !== 'undefined' && google.accounts && google.accounts.oauth2;
+    if (gisDisponivel) {
+      initializeGisClient();
+    } else {
+      showToast('⚠️ Os serviços do Google ainda estão carregando. Aguarde 3 segundos e tente novamente.');
+      return;
+    }
+  }
+  
+  try {
+    if (accessToken === null) {
+      tokenClient.requestAccessToken({prompt: 'consent'});
+    } else {
+      tokenClient.requestAccessToken({prompt: ''});
+    }
+  } catch (err) {
+    console.error('Erro ao solicitar Access Token:', err);
+    showToast('❌ Falha ao abrir autenticação do Google.');
+  }
+}
+
 async function callCalendarAPI(action, params) {
-  // Se a Dra. não realizou o login na sessão, avisa
   if (!accessToken) {
     showToast('⚠️ Agenda desconectada! Faça login no botão superior do painel.');
     throw new Error('Google Calendar não autorizado.');
@@ -209,7 +276,6 @@ async function callCalendarAPI(action, params) {
       headers: headers,
       body: JSON.stringify(params)
     });
-    
     if (!response.ok) throw new Error('Erro ao criar evento no Google');
     const data = await response.json();
     return { id: data.id };
@@ -220,21 +286,18 @@ async function callCalendarAPI(action, params) {
       method: 'DELETE',
       headers: headers
     });
-    
     if (!response.ok && response.status !== 404) throw new Error('Erro ao deletar evento no Google');
     return { id: 'ok' };
   }
 }
 
-// Adaptação dos parâmetros para o formato nativo que a API do Google exige
 async function createCalendarEvent(p) {
   const [d, mo, y] = p.data.split('/').map(Number);
   const [hh, mm] = p.hora.split(':').map(Number);
   
-  // Monta as datas no fuso horário local correto
   const startDT = new Date(y, mo - 1, d, hh, mm, 0);
   const endDT = new Date(startDT); 
-  endDT.setMinutes(endDT.getMinutes() + 50); // Consulta de 50 minutos
+  endDT.setMinutes(endDT.getMinutes() + 50);
 
   return callCalendarAPI('create_event', {
     summary: `Consulta – ${p.nome} (${p.modal})`,
@@ -246,12 +309,13 @@ async function createCalendarEvent(p) {
 
 function showToast(msg) {
   const t = document.getElementById('toast');
+  if(!t) return;
   t.textContent = msg; t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'), 3000);
 }
 
 async function changeStatus(id, newStatus, btn) {
-  const p = patients.find(x=>x.id===id);
+  const p = patients.find(x => x && x.id == id);
   if(!p) return;
   const old = p.status;
   p.status = newStatus;
@@ -291,9 +355,9 @@ function showAdmin() {
   document.getElementById('adminPass').value='';
   setTimeout(()=>document.getElementById('adminPass').focus(),100);
 }
+
 async function checkPass() {
   const senha = document.getElementById('adminPass').value;
-
   try {
     const res = await fetch('/api/login', {
       method: 'POST',
@@ -315,41 +379,56 @@ async function checkPass() {
     alert('Erro ao verificar senha.');
   }
 }
+
 function showPatient() {
   document.getElementById('adminView').style.display='none';
   document.getElementById('patientView').style.display='flex';
 }
 
 function renderAdmin() {
-  const pending=patients.filter(p=>p.status==='pendente').length;
-  const sched=patients.filter(p=>p.status==='agendado').length;
-  const canc=patients.filter(p=>p.status==='cancelado').length;
-  document.getElementById('statsRow').innerHTML=`
-    <div class="stat-card"><p class="stat-label">Pendentes</p><p class="stat-value s-pending">${pending}</p></div>
-    <div class="stat-card"><p class="stat-label">Agendados</p><p class="stat-value s-agendado">${sched}</p></div>
-    <div class="stat-card"><p class="stat-label">Cancelados</p><p class="stat-value s-cancelado">${canc}</p></div>`;
+  if (!Array.isArray(patients)) patients = [];
 
-  const filtered=activeFilter==='todos'?patients:patients.filter(p=>p.status===activeFilter);
-  const list=document.getElementById('patientsList');
+  const pending=patients.filter(p=>p && p.status==='pendente').length;
+  const sched=patients.filter(p=>p && p.status==='agendado').length;
+  const canc=patients.filter(p=>p && p.status==='cancelado').length;
+  
+  const statsRow = document.getElementById('statsRow');
+  if(statsRow) {
+    statsRow.innerHTML=`
+      <div class="stat-card"><p class="stat-label">Pendentes</p><p class="stat-value s-pending">${pending}</p></div>
+      <div class="stat-card"><p class="stat-label">Agendados</p><p class="stat-value s-agendado">${sched}</p></div>
+      <div class="stat-card"><p class="stat-label">Cancelados</p><p class="stat-value s-cancelado">${canc}</p></div>`;
+  }
+
+  const filtered = activeFilter === 'todos' ? patients : patients.filter(p => p && p.status === activeFilter);
+  const list = document.getElementById('patientsList');
+  if(!list) return;
+
   if(!filtered.length){
-    list.innerHTML='<div class="empty-state"><i class="ti ti-calendar-off" style="font-size:32px;display:block;margin-bottom:8px" aria-hidden="true"></i>Nenhum paciente nesta categoria.</div>';
+    list.innerHTML='<div class="empty-state"><i class="bx bx-calendar-x" style="font-size:32px;display:block;margin-bottom:8px" aria-hidden="true"></i>Nenhum paciente nesta categoria.</div>';
     return;
   }
-  list.innerHTML=filtered.map(p=>{
-    const ini=p.nome.split(' ').slice(0,2).map(n=>n[0]).join('').toUpperCase();
+  
+  list.innerHTML = filtered.map((p, index) => {
+    if (!p) return '';
+    const seguroId = p.id !== undefined && p.id !== null ? p.id : index;
+    const nomePaciente = p.nome || "Paciente Sem Nome";
+    const ini = nomePaciente.split(' ').slice(0,2).map(n=>n[0]||'').join('').toUpperCase() || 'P';
+    
     const calBtn = p.status==='agendado'
-      ? `<button class="btn-cal" disabled title="Já está no Calendar"><i class="ti ti-calendar-check" aria-hidden="true"></i> No Calendar</button>`
+      ? `<button class="btn-cal" disabled title="Já está no Calendar"><i class="bx bx-calendar-check" aria-hidden="true"></i> No Calendar</button>`
       : ``;
+      
     return `<div class="patient-card">
       <div class="patient-avatar">${ini}</div>
       <div class="patient-info">
-        <p class="patient-name">${p.nome}</p>
-        <p class="patient-meta"><i class="ti ti-mail" style="font-size:12px;vertical-align:-1px" aria-hidden="true"></i> ${p.email} &nbsp;·&nbsp; <i class="ti ti-phone" style="font-size:12px;vertical-align:-1px" aria-hidden="true"></i> ${p.tel}</p>
-        <p class="patient-meta"><i class="ti ti-device-desktop" style="font-size:12px;vertical-align:-1px" aria-hidden="true"></i> ${p.modal}</p>
-        <p class="patient-date"><i class="ti ti-clock" style="font-size:12px;vertical-align:-1px" aria-hidden="true"></i> ${p.data} às ${p.hora}${p.msg?` &nbsp;·&nbsp; <em>"${p.msg}"</em>`:''}</p>
+        <p class="patient-name">${nomePaciente}</p>
+        <p class="patient-meta"><i class="bx bx-envelope" style="font-size:12px;vertical-align:-1px" aria-hidden="true"></i> ${p.email || ''} &nbsp;·&nbsp; <i class="bx bx-phone" style="font-size:12px;vertical-align:-1px" aria-hidden="true"></i> ${p.tel || ''}</p>
+        <p class="patient-meta"><i class="bx bx-desktop" style="font-size:12px;vertical-align:-1px" aria-hidden="true"></i> ${p.modal || ''}</p>
+        <p class="patient-date"><i class="bx bx-time" style="font-size:12px;vertical-align:-1px" aria-hidden="true"></i> ${p.data || ''} às ${p.hora || ''}${p.msg?` &nbsp;·&nbsp; <em>"${p.msg}"</em>`:''}</p>
       </div>
       <div class="patient-actions">
-        <select class="status-select" onchange="changeStatus(${p.id}, this.value, this)">
+        <select class="status-select" onchange="changeStatus(${seguroId}, this.value, this)">
           <option value="pendente" ${p.status==='pendente'?'selected':''}>⏳ Pendente</option>
           <option value="agendado" ${p.status==='agendado'?'selected':''}>✅ Agendado</option>
           <option value="cancelado" ${p.status==='cancelado'?'selected':''}>❌ Cancelado</option>
@@ -358,6 +437,14 @@ function renderAdmin() {
       </div>
     </div>`;
   }).join('');
+}
+
+// Função de filtragem chamada pelos botões do menu admin
+function filterList(filter, btn) {
+  activeFilter = filter;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderAdmin();
 }
 
 document.getElementById('adminPass').addEventListener('keydown',e=>{ if(e.key==='Enter') checkPass(); });
