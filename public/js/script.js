@@ -1,3 +1,4 @@
+const API_BASE_URL = 'http://localhost:3000';
 const GCAL_URL = '';
 
 let patients = [];
@@ -27,7 +28,7 @@ function toLocalISOString(d) {
 
 async function loadPatients() {
   try {
-    const res = await fetch('/api/patients');
+    const res = await fetch(`${API_BASE_URL}/api/patients`);
     if (!res.ok) throw new Error('Erro na resposta do servidor');
     patients = await res.json();
     
@@ -359,7 +360,7 @@ function showAdmin() {
 async function checkPass() {
   const senha = document.getElementById('adminPass').value;
   try {
-    const res = await fetch('/api/login', {
+    const res = await fetch(`${API_BASE_URL}/api/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ password: senha })
