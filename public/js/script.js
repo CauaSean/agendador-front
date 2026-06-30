@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:3000';
+const API_BASE_URL = 'https://agendador-back.onrender.com';
 const GCAL_URL = '';
 
 let patients = [];
