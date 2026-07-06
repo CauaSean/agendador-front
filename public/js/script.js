@@ -165,14 +165,51 @@ async function submitForm() {
   document.getElementById('successDetail').textContent = `Consulta marcada para ${dateStr} às ${pickedSlot}. Evento adicionado ao Google Calendar da Dra. Luciane.`;
 }
 
-//CONFIGURAÇÕES GOOGLE OAUTH2 & GIS
+// CONFIGURAÇÕES GOOGLE OAUTH2 & GIS
 const CLIENT_ID = '289288652429-3vplpt2mduqmmgnb3291b3468d5lo4oh.apps.googleusercontent.com';
 const SCOPES = 'https://www.googleapis.com/auth/calendar.events'; 
 
-let tokenClient = null;
-let gapiInited = false;
-let gisiInited = false;
-let accessToken = null;
+let codeClient = null; // Mudou de tokenClient para codeClient
+
+function iniciarGoogleIdentityServices() {
+    codeClient = google.accounts.oauth2.initCodeClient({
+        client_id: CLIENT_ID,
+        scope: SCOPES,
+        ux_mode: 'redirect',
+        redirect_uri: 'https://agendador-back.onrender.com/api/google/callback',
+        state: 'carreiracaua1@gmail.com', // Enviando seu e-mail de teste 
+        error_callback: (err) => {
+            console.error("Erro na inicialização do cliente:", err);
+        }
+    });
+}
+
+// Função disparada pelo clique do botão "Conectar Agenda"
+function handleConectarGoogle() {
+    // Solicita o consentimento do usuário
+    codeClient.requestCode();
+}
+
+async function enviarCodigoParaOBackend(authCode) {
+    try {
+        const response = await fetch('${API_BASE_URL}/api/google/conectar', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ code: authCode })
+        });
+
+        if (response.ok) {
+            alert("Google Agenda conectado com sucesso e sempre ativo!");
+        } else {
+            console.error("Erro ao salvar credenciais no back-end");
+        }
+    } catch (error) {
+        console.error("Erro na comunicação com o servidor:", error);
+    }
+}
 
 // Garante o carregamento mesmo se os scripts externos demorarem
 function initApp() {
