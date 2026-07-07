@@ -4,6 +4,8 @@ const GCAL_URL = '';
 let patients = [];
 let nextId = 1;
 let activeFilter = 'todos';
+let gapiInited = false;
+let gisiInited = false;
 
 // Date picker state
 let pickedDate = new Date();
