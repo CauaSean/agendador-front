@@ -260,9 +260,23 @@ function initializeGisClient() {
       client_id: CLIENT_ID,
       scope: SCOPES,
       callback: (tokenResponse) => {
+        // 1. Em vez de dar throw, tratamos o erro diretamente aqui dentro
         if (tokenResponse.error !== undefined) {
-          throw (tokenResponse);
+          
+          // Se for apenas o usuário fechando a janela, tratamos com suavidade
+          if (tokenResponse.type === 'popup_closed') {
+            console.warn('O usuário fechou a janela de login antes de concluir.');
+            showToast('⚠️ Login cancelado pelo usuário.');
+            return; // Para a execução aqui de forma limpa
+          }
+          
+          // Se for qualquer outro erro real da API do Google
+          console.error('Erro no retorno do Google Identity:', tokenResponse.error);
+          showToast('❌ Falha ao conectar com o Google Calendar.');
+          return;
         }
+
+        // 2. Fluxo de sucesso (continua igual ao seu)
         accessToken = tokenResponse.access_token;
         
         // Atualiza visual do botão
@@ -277,10 +291,10 @@ function initializeGisClient() {
     });
     gisiInited = true;
   } catch (e) {
+    // Esse catch só vai pegar erros caso o próprio 'initTokenClient' falhe na inicialização do script
     console.error('Erro ao inicializar GIS client:', e);
   }
 }
-
 
 function handleAuthClick() {
   if (!tokenClient) {
