@@ -297,28 +297,37 @@ function initializeGisClient() {
 }
 
 function handleAuthClick() {
+  // 1. Se NÃO está pronto, inicializa e PARA aqui para dar tempo ao navegador
   if (!tokenClient) {
     const gisDisponivel = typeof google !== 'undefined' && google.accounts && google.accounts.oauth2;
     if (gisDisponivel) {
       initializeGisClient();
+      showToast('⚙️ Preparando conexão... Clique novamente em 1 segundo.');
     } else {
-      showToast('⚠️ Os serviços do Google ainda estão carregando. Aguarde 3 segundos e tente novamente.');
-      return;
+      showToast('⚠️ Os serviços do Google ainda estão carregando. Aguarde um instante.');
     }
+    return; 
   }
   
+
+  const btn = document.getElementById('btn-gcal-auth');
+  if (btn) btn.disabled = true;
+
   try {
-    if (accessToken === null) {
-      tokenClient.requestAccessToken({prompt: 'consent'});
+    // 2. Checagem segura: se não houver um accessToken válido na memória
+    if (!accessToken) { 
+      tokenClient.requestAccessToken({ prompt: 'consent' });
     } else {
-      tokenClient.requestAccessToken({prompt: ''});
+      tokenClient.requestAccessToken({ prompt: 'select_account' }); 
     }
   } catch (err) {
     console.error('Erro ao solicitar Access Token:', err);
     showToast('❌ Falha ao abrir autenticação do Google.');
+    if (btn) btn.disabled = false;
   }
-}
 
+  setTimeout(() => { if (btn) btn.disabled = false; }, 3000);
+}
 async function callCalendarAPI(action, params) {
   if (!accessToken) {
     showToast('⚠️ Agenda desconectada! Faça login no botão superior do painel.');
