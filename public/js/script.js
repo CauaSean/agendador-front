@@ -260,14 +260,14 @@ function initializeGisClient() {
       client_id: CLIENT_ID,
       scope: SCOPES,
       callback: (tokenResponse) => {
-        // 1. Em vez de dar throw, tratamos o erro diretamente aqui dentro
+        // 1. Tratamos o erro diretamente aqui dentro de forma assíncrona
         if (tokenResponse.error !== undefined) {
           
-          // Se for apenas o usuário fechando a janela, tratamos com suavidade
+          // Se for apenas a janela fechando (ou fechada pelo navegador/duplo clique)
           if (tokenResponse.type === 'popup_closed') {
-            console.warn('O usuário fechou a janela de login antes de concluir.');
-            showToast('⚠️ Login cancelado pelo usuário.');
-            return; // Para a execução aqui de forma limpa
+            console.warn('O pop-up foi fechado antes da conclusão do login.');
+            showToast('⚠️ Conexão cancelada ou interrompida.');
+            return; 
           }
           
           // Se for qualquer outro erro real da API do Google
@@ -276,10 +276,9 @@ function initializeGisClient() {
           return;
         }
 
-        // 2. Fluxo de sucesso (continua igual ao seu)
+        // 2. Fluxo de sucesso
         accessToken = tokenResponse.access_token;
         
-        // Atualiza visual do botão
         const btn = document.getElementById('btn-gcal-auth');
         if(btn) {
           btn.innerHTML = '<i class="bx bx-check-circle"></i> Agenda Conectada';
@@ -291,43 +290,38 @@ function initializeGisClient() {
     });
     gisiInited = true;
   } catch (e) {
-    // Esse catch só vai pegar erros caso o próprio 'initTokenClient' falhe na inicialização do script
     console.error('Erro ao inicializar GIS client:', e);
   }
 }
 
 function handleAuthClick() {
-  // 1. Se NÃO está pronto, inicializa e PARA aqui para dar tempo ao navegador
   if (!tokenClient) {
-    const gisDisponivel = typeof google !== 'undefined' && google.accounts && google.accounts.oauth2;
-    if (gisDisponivel) {
-      initializeGisClient();
-      showToast('⚙️ Preparando conexão... Clique novamente em 1 segundo.');
-    } else {
-      showToast('⚠️ Os serviços do Google ainda estão carregando. Aguarde um instante.');
-    }
-    return; 
+    console.warn('O cliente do Google (tokenClient) ainda não foi inicializado.');
+    showToast('⚠️ Conexão em andamento. Aguarde 2 segundos e tente novamente.');
+    return;
   }
-  
+
 
   const btn = document.getElementById('btn-gcal-auth');
-  if (btn) btn.disabled = true;
+  if (btn) {
+    btn.disabled = true;
+  }
 
   try {
-    // 2. Checagem segura: se não houver um accessToken válido na memória
-    if (!accessToken) { 
-      tokenClient.requestAccessToken({ prompt: 'consent' });
-    } else {
-      tokenClient.requestAccessToken({ prompt: 'select_account' }); 
-    }
+    tokenClient.requestAccessToken({ prompt: 'select_account' });
+    
   } catch (err) {
-    console.error('Erro ao solicitar Access Token:', err);
-    showToast('❌ Falha ao abrir autenticação do Google.');
+    console.error('Erro crítico ao disparar o pop-up do Google:', err);
+    showToast('❌ Falha ao abrir a autenticação.');
     if (btn) btn.disabled = false;
   }
 
-  setTimeout(() => { if (btn) btn.disabled = false; }, 3000);
+
+  setTimeout(() => {
+    if (btn) btn.disabled = false;
+  }, 4000);
 }
+
 async function callCalendarAPI(action, params) {
   if (!accessToken) {
     showToast('⚠️ Agenda desconectada! Faça login no botão superior do painel.');
