@@ -169,47 +169,47 @@ async function submitForm() {
 const CLIENT_ID = '289288652429-3vplpt2mduqmmgnb3291b3468d5lo4oh.apps.googleusercontent.com';
 const SCOPES = 'https://www.googleapis.com/auth/calendar.events'; 
 
-let codeClient = null; // Mudou de tokenClient para codeClient
+let codeClient = null; 
 
 function iniciarGoogleIdentityServices() {
-    codeClient = google.accounts.oauth2.initCodeClient({
-        client_id: CLIENT_ID,
-        scope: SCOPES,
-        ux_mode: 'redirect',
-        redirect_uri: 'https://agendador-back.onrender.com/api/google/callback',
-        state: 'carreiracaua1@gmail.com', // Enviando seu e-mail de teste 
-        error_callback: (err) => {
-            console.error("Erro na inicialização do cliente:", err);
-        }
-    });
+    try {
+        codeClient = google.accounts.oauth2.initCodeClient({
+            client_id: CLIENT_ID,
+            scope: SCOPES,
+            ux_mode: 'redirect', // Usuário será redirecionado para o backend
+            redirect_uri: 'https://agendador-back.onrender.com/api/google/callback',
+            state: 'carreiracaua1@gmail.com', 
+            error_callback: (err) => {
+                console.error("Erro na inicialização do cliente:", err);
+            }
+        });
+        console.log("Google Identity Services inicializado com sucesso.");
+    } catch (e) {
+        console.error("Falha ao inicializar o GIS. O script do Google foi carregado?", e);
+    }
 }
 
 // Função disparada pelo clique do botão "Conectar Agenda"
 function handleConectarGoogle() {
-    // Solicita o consentimento do usuário
-    codeClient.requestCode();
-}
-
-async function enviarCodigoParaOBackend(authCode) {
-    try {
-        const response = await fetch('${API_BASE_URL}/api/google/conectar', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({ code: authCode })
-        });
-
-        if (response.ok) {
-            alert("Google Agenda conectado com sucesso e sempre ativo!");
-        } else {
-            console.error("Erro ao salvar credenciais no back-end");
-        }
-    } catch (error) {
-        console.error("Erro na comunicação com o servidor:", error);
+    if (!codeClient) {
+        console.error("O codeClient ainda não foi inicializado. Chamando inicialização...");
+        iniciarGoogleIdentityServices();
+    }
+    
+    if (codeClient) {
+        codeClient.requestCode();
+    } else {
+        alert("Erro ao carregar o autenticador do Google. Tente novamente em instantes.");
     }
 }
+
+// Garante que o cliente seja criado assim que a página carregar
+window.onload = function() {
+    // Se o script do Google já estiver carregado, inicializa.
+    if (typeof google !== 'undefined' && google.accounts) {
+        iniciarGoogleIdentityServices();
+    }
+};
 
 // Garante o carregamento mesmo se os scripts externos demorarem
 function initApp() {
