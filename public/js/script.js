@@ -240,17 +240,31 @@ function initApp() {
 
 // Dispara a inicialização assim que o DOM estiver pronto
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initApp);
+  document.addEventListener('DOMContentLoaded', () => {
+    initApp();
+    restaurarView();
+  });
 } else {
   initApp();
+  restaurarView();
 }
 
-async function intializeGapiClient() {
-  try {
-    await gapi.client.init({});
-    gapiInited = true;
-  } catch (e) {
-    console.error('Erro ao inicializar GAPI client:', e);
+// Nova função para restaurar a última tela ativa pós-F5
+async function restaurarView() {
+  const ultimaView = localStorage.getItem('viewAtual');
+  
+  if (ultimaView === 'admin') {
+    // Esconde a de paciente e mostra a de admin
+    document.getElementById('patientView').style.display = 'none';
+    document.getElementById('adminView').style.display = 'block';
+    
+    // Carrega e renderiza os dados necessários do Admin
+    await loadPatients();
+    renderAdmin();
+  } else {
+    // Padrão garante que a tela de paciente fique visível
+    document.getElementById('adminView').style.display = 'none';
+    document.getElementById('patientView').style.display = 'flex';
   }
 }
 
@@ -433,6 +447,10 @@ async function checkPass() {
       document.getElementById('confirmAdmin').classList.remove('open');
       document.getElementById('patientView').style.display = 'none';
       document.getElementById('adminView').style.display = 'block';
+      
+      // Salva que o usuário está na tela admin para persistir no F5
+      localStorage.setItem('viewAtual', 'admin');
+      
       await loadPatients();
       renderAdmin();
     } else {
@@ -441,6 +459,14 @@ async function checkPass() {
   } catch (e) {
     alert('Erro ao verificar senha.');
   }
+}
+
+function showPatient() {
+  document.getElementById('adminView').style.display = 'none';
+  document.getElementById('patientView').style.display = 'flex';
+  
+  // Salva que voltou para a tela de paciente
+  localStorage.setItem('viewAtual', 'paciente');
 }
 
 function showPatient() {
