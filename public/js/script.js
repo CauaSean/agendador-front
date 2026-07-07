@@ -176,16 +176,22 @@ function iniciarGoogleIdentityServices() {
         codeClient = google.accounts.oauth2.initCodeClient({
             client_id: CLIENT_ID,
             scope: SCOPES,
-            ux_mode: 'redirect', // Usuário será redirecionado para o backend
-            redirect_uri: 'https://agendador-back.onrender.com/api/google/callback',
-            state: 'carreiracaua1@gmail.com', 
+            ux_mode: 'popup', // Mudamos de redirect para popup
+            callback: (response) => {
+                // O Google valida o login e te entrega o código bem aqui
+                if (response.code) {
+                    console.log("Código de autorização recebido:", response.code);
+                    // Dispara a sua função que faz o POST para o Render salvando as credenciais
+                    enviarCodigoParaOBackend(response.code); 
+                }
+            },
             error_callback: (err) => {
-                console.error("Erro na inicialização do cliente:", err);
+                console.error("Erro no fluxo do Google:", err);
             }
         });
-        console.log("Google Identity Services inicializado com sucesso.");
+        console.log("Google Identity Services inicializado em modo Popup.");
     } catch (e) {
-        console.error("Falha ao inicializar o GIS. O script do Google foi carregado?", e);
+        console.error("Falha ao inicializar o GIS:", e);
     }
 }
 
